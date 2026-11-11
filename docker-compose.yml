@@ -1,0 +1,83 @@
+# 标准一键部署：复制 .env.example 为 .env，填好 config/core.wiki.yaml 与 config/secrets.yaml 后执行：
+#   docker compose up -d --build
+#
+# 包含服务：机器人本体（qqbot）+ 知识库每小时自动增量更新（kbsync）+ PostgreSQL（pgvector）
+
+name: jianshanagent
+
+services:
+  qqbot:
+    build: .
+    image: jianshanagent-instance:local
+    restart: unless-stopped
+    stop_grace_period: 30s
+    environment:
+      JIANSHANAGENT_CONFIG_DIR: /app/config
+      JIANSHANAGENT_CONFIG_OVERRIDES_DIR: /data/config
+      JIANSHANAGENT_ADMIN_TOKEN_FILE: /data/admin/token
+      JIANSHANAGENT_SESSION_STORE_DIR: /data/qq_ws
+      JIANSHANAGENT_KB_DIR: /data/kb
+      JIANSHANAGENT_LOG_JSON: "1"
+      JIANSHANAGENT_POSTGRES_DSN: postgresql://jianshanagent:${POSTGRES_PASSWORD:-jianshanagent}@postgres:5432/jianshanagent
+      TZ: Asia/Shanghai
+    volumes:
+      - ./config/secrets.yaml:/app/config/secrets.yaml:ro
+      - ./sites:/app/sites:ro
+      - ./plugins:/app/plugins:ro
+      - ./data:/data
+    depends_on:
+      postgres:
+        condition: service_healthy
+    ports:
+      # Web 管理后台与健康检查端口（默认 http://127.0.0.1:8080）
+      - "${ADMIN_BIND_ADDR:-127.0.0.1}:${ADMIN_PORT:-8080}:8080"
+
+  kbsync:
+    image: jianshanagent-instance:local
+    restart: unless-stopped
+    stop_grace_period: 30s
+    command: ["python", "-m", "jianshanagent.plugins.knowledge", "sync", "--loop"]
+    environment:
+      JIANSHANAGENT_CONFIG_DIR: /app/config
+      JIANSHANAGENT_CONFIG_OVERRIDES_DIR: /data/config
+      JIANSHANAGENT_KB_DIR: /data/kb
+      JIANSHANAGENT_LOG_JSON: "1"
+      JIANSHANAGENT_POSTGRES_DSN: postgresql://jianshanagent:${POSTGRES_PASSWORD:-jianshanagent}@postgres:5432/jianshanagent
+      TZ: Asia/Shanghai
+    volumes:
+      - ./config/secrets.yaml:/app/config/secrets.yaml:ro
+      - ./sites:/app/sites:ro
+      - ./plugins:/app/plugins:ro
+      - ./data:/data
+    depends_on:
+      qqbot:
+        condition: service_started
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "python", "-m", "jianshanagent.plugins.knowledge", "sync", "--health"]
+      interval: 60s
+      timeout: 20s
+      retries: 3
+      start_period: 60s
+
+  postgres:
+    image: pgvector/pgvector:0.8.7-pg17
+    restart: unless-stopped
+    stop_grace_period: 60s
+    shm_size: 256mb
+    environment:
+      POSTGRES_DB: jianshanagent
+      POSTGRES_USER: jianshanagent
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-jianshanagent}
+      TZ: Asia/Shanghai
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U jianshanagent -d jianshanagent"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+volumes:
+  pgdata:

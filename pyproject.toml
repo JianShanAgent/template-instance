@@ -1,21 +1,20 @@
-# 这个部署的开发环境：核心 + 用到的插件，都用旁边目录里的源码（可编辑安装）。
-# 它不是一个要发布的包；线上用哪个提交由 components.lock 决定。
+# 实例运行环境配置：默认直接从 GitHub 拉取 JianShanAgent 核心包（含编译好的 Web 管理后台）。
+# 用户拿到这一个实例仓库即可独立运行，无需在同级目录手动克隆 agent-core。
 [project]
-name = "jianshanagent-instance-example"      # 改名：example 换成这个部署的名字
-version = "0"
-description = "JianShanAgent 的一个部署：<哪个 wiki> 的 QQ 机器人"
+name = "jianshanagent-instance-example"      # 改名：example 换成你的部署名
+version = "0.1.0"
+description = "JianShanAgent 部署实例：<你的 Wiki 名称> QQ 问答机器人"
 requires-python = ">=3.12"
 dependencies = [
-  "jianshanagent",
-  # 用到的站点插件（连同它的上级）：
-  # "jianshanagent-site-example",
-  # "jianshanagent-site-example-demo",
+  "jianshanagent @ git+https://github.com/JianShanAgent/agent-core.git",
+  # 如果要使用外部独立仓库发布的插件，直接加在这里即可（uv sync 与 Docker 构建都会自动拉取）：
+  # "jianshanagent-site-huiji @ git+https://github.com/JianShanAgent/site-huiji.git",
+  # "jianshanagent-site-huiji-yys @ git+https://github.com/JianShanAgent/site-huiji-yys.git",
 ]
 
 [tool.uv]
 package = false
 
-[tool.uv.sources]
-jianshanagent = { path = "../agent-core", editable = true }
-# jianshanagent-site-example = { path = "../site-example", editable = true }
-# jianshanagent-site-example-demo = { path = "../site-example-demo", editable = true }
+# 【可选】如果你同时在本地修改核心或外部插件源码，取消下面注释即可切换为同级目录可编辑安装：
+# [tool.uv.sources]
+# jianshanagent = { path = "../agent-core", editable = true }
