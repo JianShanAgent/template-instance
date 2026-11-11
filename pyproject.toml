@@ -1,0 +1,21 @@
+# 这个部署的开发环境：核心 + 用到的插件，都用旁边目录里的源码（可编辑安装）。
+# 它不是一个要发布的包；线上用哪个提交由 components.lock 决定。
+[project]
+name = "jianshanagent-instance-example"      # 改名：example 换成这个部署的名字
+version = "0"
+description = "JianShanAgent 的一个部署：<哪个 wiki> 的 QQ 机器人"
+requires-python = ">=3.12"
+dependencies = [
+  "jianshanagent",
+  # 用到的站点插件（连同它的上级）：
+  # "jianshanagent-site-example",
+  # "jianshanagent-site-example-demo",
+]
+
+[tool.uv]
+package = false
+
+[tool.uv.sources]
+jianshanagent = { path = "../agent-core", editable = true }
+# jianshanagent-site-example = { path = "../site-example", editable = true }
+# jianshanagent-site-example-demo = { path = "../site-example-demo", editable = true }

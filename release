@@ -1,0 +1,17 @@
+#!/usr/bin/env bash
+# 发布这个部署：转给核心仓库的 deploy/scripts/release.sh（用法见那个文件开头，或者 ./release 不带参数）。
+# 核心在哪：components.lock 的第一行。
+set -euo pipefail
+cd "$(dirname "${BASH_SOURCE[0]}")"
+
+# 发布到哪台服务器：ssh 认得的名字或地址（建议在 ~/.ssh/config 里起个名字）
+SSH_HOST=""
+
+core=$(awk '$1 == "core" { print $2; exit }' components.lock)
+[ -x "$core/deploy/scripts/release.sh" ] || {
+  echo "找不到核心仓库的发布脚本（$core/deploy/scripts/release.sh）：几个仓库要并排放在同一个目录下" >&2
+  exit 1
+}
+export JIANSHANAGENT_SSH_HOST="${JIANSHANAGENT_SSH_HOST:-$SSH_HOST}"
+[ -n "$JIANSHANAGENT_SSH_HOST" ] || { echo "还没有指定服务器：在这个文件里填 SSH_HOST" >&2; exit 1; }
+exec "$core/deploy/scripts/release.sh" "$@"

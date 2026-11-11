@@ -1,0 +1,16 @@
+# 凭据和开发机的调试覆写
+config/secrets.yaml
+config/local/**
+!config/local/.gitkeep
+.env
+
+# 运行数据（知识库文件、对话记录……）
+data
+
+# Python
+.venv/
+__pycache__/
+*.py[cod]
+uv.lock
+
+.DS_Store
