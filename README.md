@@ -91,7 +91,7 @@ Docker 方式下改了东西怎么生效：
 |---|---|
 | `config/secrets.yaml`、`sites/`、`plugins/` | `docker compose restart qqbot kbsync` |
 | `config/` 下别的文件、`pyproject.toml`（加了插件依赖） | `docker compose up -d --build` |
-| 想升级到最新的核心 | `docker compose build --no-cache && docker compose up -d` |
+| 核心出了新版本 | 管理后台「系统信息」页点「更新并重启」；后台说依赖变了要重建环境时：`docker compose build --no-cache && docker compose up -d` |
 
 ### 4. 构建全站向量知识库
 

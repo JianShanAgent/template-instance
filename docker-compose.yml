@@ -29,6 +29,8 @@ x-bot-env: &bot-env
   JIANSHANAGENT_CONFIG_DIR: /app/config
   JIANSHANAGENT_CONFIG_OVERRIDES_DIR: /data/config
   JIANSHANAGENT_KB_DIR: /data/kb
+  # 在管理后台点「更新」装的新版本放在这里（数据目录里，重建容器还在），盖住镜像里装的那一份
+  JIANSHANAGENT_UPDATE_DIR: /data/core
   JIANSHANAGENT_LOG_JSON: "1"
   JIANSHANAGENT_POSTGRES_DSN: postgresql://jianshanagent:${POSTGRES_PASSWORD:-jianshanagent}@postgres:5432/jianshanagent
   TZ: Asia/Shanghai
