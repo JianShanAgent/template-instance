@@ -13,8 +13,7 @@
 
 ## 这是什么
 
-见山的[核心](https://github.com/JianShanAgent/agent-core)不知道自己要服务哪个 wiki、部署到哪台机器。这些是「实例」的事：一个很小的仓库，
-写明服务哪个 wiki、用哪些插件的哪个版本。这个模板就是一个空的实例。
+见山的[核心](https://github.com/JianShanAgent/agent-core)不知道自己要服务哪个 wiki、部署到哪台机器。这些是「实例」的事：一个很小的仓库，写明服务哪个 wiki、用哪些插件的哪个版本。这个模板就是一个空的实例。
 
 复制下来填上 wiki 的地址，就是一个能跑的、纯 MediaWiki 的问答机器人。一个填好了的例子是 [`instance-yys`](https://github.com/JianShanAgent/instance-yys)。
 
@@ -49,8 +48,7 @@ JIANSHANAGENT_DRY_RUN=1 uv run jianshanagent           # 不连 QQ 试跑
 
 ## 想让它更懂你的 wiki
 
-纯 MediaWiki 的机器人只认页面。要让它认得这个站的昵称、去掉这个站的模板噪声、用这个站的说法，写一个站点插件
-（模板 [`template-site-wiki`](https://github.com/JianShanAgent/template-site-wiki)），然后在这里的三个地方加上它：
+纯 MediaWiki 的机器人只认页面。要让它认得这个站的昵称、去掉这个站的模板噪声、用这个站的说法，写一个站点插件（模板 [`template-site-wiki`](https://github.com/JianShanAgent/template-site-wiki)），然后在这里的三个地方加上它：
 
 | 在哪 | 加什么 |
 |---|---|
