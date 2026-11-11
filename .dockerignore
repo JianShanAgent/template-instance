@@ -1,0 +1,11 @@
+# 不进构建上下文的东西。
+# 凭据和本机的调试覆写一定不能进镜像：Dockerfile 里有一句 COPY config，不排除的话它们会被一起拷进去
+config/secrets.yaml
+config/local
+
+# 运行数据（知识库文件可以有一两个 G）、虚拟环境、版本库
+data
+.venv
+.git
+.env
+**/__pycache__

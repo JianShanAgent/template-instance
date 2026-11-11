@@ -48,7 +48,7 @@ cp config/secrets.example.yaml config/secrets.yaml
 ```
 
 打开 `config/secrets.yaml` 填写：
-- `llm.api_key`：对话大模型密钥（默认对接小米 MiMo；若使用 DeepSeek / OpenAI 等，新建 `config/core.llm.yaml` 覆盖 `base_url` 和模型名即可）。
+- `llm.api_key`：对话大模型密钥。默认对接小米 MiMo，目前也只在 MiMo 上调通过；要换接口地址或模型名，新建 `config/core.llm.yaml` 只写要改的项（别家接口没有测过）。
 - `gitee_ai.api_key`：向量模型密钥（默认对接模力方舟 `Qwen3-VL-Embedding-8B`；不填时自动降级为关键词检索）。
 - `qq.app_id` / `qq.client_secret`：QQ 开放平台机器人的凭据（本地用网页对话测试时可先不填）。
 
@@ -71,13 +71,27 @@ uv run jianshanagent
 #### 方式 B：Docker Compose 一键启动（自带 `pgvector` 数据库与每小时自动同步）
 
 ```bash
-cp .env.example .env
+cp .env.example .env          # 还没有 QQ 凭据、只想先试试：打开 .env 里 JIANSHANAGENT_DRY_RUN=1 那一行
 docker compose up -d --build
 ```
 
+会起三个容器：`qqbot`（机器人和管理后台）、`kbsync`（知识库自动更新）、`postgres`。另有一个 `init` 跑一下就退出，它把 `data/` 交给容器里的用户，是正常的。
+
 启动后：
-1. 查看自动生成的管理后台登录令牌：`cat data/admin/token`
+1. 查看自动生成的管理后台登录令牌：
+   - 方式 A：`cat data/admin/token`
+   - 方式 B：`docker compose exec qqbot cat /data/admin/token`（Linux 上 `data/` 归容器里的用户，直接 `cat` 要加 `sudo`）
 2. 浏览器打开 **`http://127.0.0.1:8080`**，粘贴令牌登录，点击左侧 **网页对话** 即可直接测试 `/查 <词条名>` 或自然语言提问。
+
+没起来时先看日志：`docker compose logs qqbot`。最常见的是 `llm.api_key` 还是模板里的占位值，日志里会直接写明缺哪一项。
+
+Docker 方式下改了东西怎么生效：
+
+| 改了什么 | 怎么生效 |
+|---|---|
+| `config/secrets.yaml`、`sites/`、`plugins/` | `docker compose restart qqbot kbsync` |
+| `config/` 下别的文件、`pyproject.toml`（加了插件依赖） | `docker compose up -d --build` |
+| 想升级到最新的核心 | `docker compose build --no-cache && docker compose up -d` |
 
 ### 4. 构建全站向量知识库
 
@@ -127,9 +141,11 @@ config/
   local/                  本机临时调试覆写（不入库）
 sites/                    存放本实例自写的站点插件（随本仓库 Git 同步）
 plugins/                  存放本实例自写的功能插件（随本仓库 Git 同步）
+data/                     运行时生成：登录令牌、后台里改过的配置、知识库文件（不入库）
 pyproject.toml            Python 依赖声明（默认从 GitHub 拉取 agent-core）
 Dockerfile                单实例容器镜像构建文件
 docker-compose.yml        一键启动机器人 + kbsync 自动同步 + pgvector 数据库
+.dockerignore             凭据、本机覆写、运行数据不进镜像
 components.lock / release 可选进阶：多仓库同级联调与远程服务器原子发布/自动回滚脚本
 docs/运维备忘.md           记录你自己的服务器与外部服务现状的备忘模板
 ```

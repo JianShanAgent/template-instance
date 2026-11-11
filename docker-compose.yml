@@ -1,55 +1,78 @@
-# 标准一键部署：复制 .env.example 为 .env，填好 config/core.wiki.yaml 与 config/secrets.yaml 后执行：
+# 一键启动：机器人（qqbot）+ 知识库自动更新（kbsync）+ PostgreSQL（pgvector）。
+#
+#   cp .env.example .env            # 不改也能用
 #   docker compose up -d --build
 #
-# 包含服务：机器人本体（qqbot）+ 知识库每小时自动增量更新（kbsync）+ PostgreSQL（pgvector）
+# 项目名取这个目录的名字（没有写死），镜像名也跟着项目名走：
+# 同一台机器上放几个实例，或者和别的见山部署放在一起，互不相干。
+#
+# 配置（config/）是构建时拷进镜像的：改了配置要重新 `docker compose up -d --build`。
+# 凭据（config/secrets.yaml）、自己写的插件（sites/、plugins/）是挂进去的：改了重启就生效。
 
-name: jianshanagent
+x-bot: &bot
+  image: ${COMPOSE_PROJECT_NAME}-bot:local
+  restart: unless-stopped
+  stop_grace_period: 30s
+  volumes:
+    # 凭据不进镜像。文件不存在时直接报错，而不是悄悄建一个同名的空目录
+    - type: bind
+      source: ./config/secrets.yaml
+      target: /app/config/secrets.yaml
+      read_only: true
+      bind:
+        create_host_path: false
+    - ./sites:/app/sites:ro
+    - ./plugins:/app/plugins:ro
+    - ./data:/data
+
+x-bot-env: &bot-env
+  JIANSHANAGENT_CONFIG_DIR: /app/config
+  JIANSHANAGENT_CONFIG_OVERRIDES_DIR: /data/config
+  JIANSHANAGENT_KB_DIR: /data/kb
+  JIANSHANAGENT_LOG_JSON: "1"
+  JIANSHANAGENT_POSTGRES_DSN: postgresql://jianshanagent:${POSTGRES_PASSWORD:-jianshanagent}@postgres:5432/jianshanagent
+  TZ: Asia/Shanghai
 
 services:
-  qqbot:
+  init:
+    # 只跑一下就退出：把数据目录交给容器里的用户（uid 10001）。
+    # Linux 上 ./data 第一次是 Docker 用 root 建出来的，不做这一步机器人写不进去
+    image: ${COMPOSE_PROJECT_NAME}-bot:local
     build: .
-    image: jianshanagent-instance:local
-    restart: unless-stopped
-    stop_grace_period: 30s
+    user: root
+    restart: "no"
+    command: ["chown", "-R", "10001:10001", "/data"]
+    healthcheck:
+      disable: true
+    volumes:
+      - ./data:/data
+
+  qqbot:
+    <<: *bot
     environment:
-      JIANSHANAGENT_CONFIG_DIR: /app/config
-      JIANSHANAGENT_CONFIG_OVERRIDES_DIR: /data/config
+      <<: *bot-env
       JIANSHANAGENT_ADMIN_TOKEN_FILE: /data/admin/token
       JIANSHANAGENT_SESSION_STORE_DIR: /data/qq_ws
-      JIANSHANAGENT_KB_DIR: /data/kb
-      JIANSHANAGENT_LOG_JSON: "1"
-      JIANSHANAGENT_POSTGRES_DSN: postgresql://jianshanagent:${POSTGRES_PASSWORD:-jianshanagent}@postgres:5432/jianshanagent
-      TZ: Asia/Shanghai
-    volumes:
-      - ./config/secrets.yaml:/app/config/secrets.yaml:ro
-      - ./sites:/app/sites:ro
-      - ./plugins:/app/plugins:ro
-      - ./data:/data
+      # .env 里写 JIANSHANAGENT_DRY_RUN=1：不连 QQ，只开管理后台和网页对话
+      JIANSHANAGENT_DRY_RUN: ${JIANSHANAGENT_DRY_RUN:-}
     depends_on:
+      init:
+        condition: service_completed_successfully
       postgres:
         condition: service_healthy
     ports:
-      # Web 管理后台与健康检查端口（默认 http://127.0.0.1:8080）
+      # 管理后台和健康检查（默认 http://127.0.0.1:8080）
       - "${ADMIN_BIND_ADDR:-127.0.0.1}:${ADMIN_PORT:-8080}:8080"
 
   kbsync:
-    image: jianshanagent-instance:local
-    restart: unless-stopped
-    stop_grace_period: 30s
+    # 知识库自动更新：每小时看一次 wiki 改了什么，只重做变了的部分
+    <<: *bot
     command: ["python", "-m", "jianshanagent.plugins.knowledge", "sync", "--loop"]
     environment:
-      JIANSHANAGENT_CONFIG_DIR: /app/config
-      JIANSHANAGENT_CONFIG_OVERRIDES_DIR: /data/config
-      JIANSHANAGENT_KB_DIR: /data/kb
-      JIANSHANAGENT_LOG_JSON: "1"
-      JIANSHANAGENT_POSTGRES_DSN: postgresql://jianshanagent:${POSTGRES_PASSWORD:-jianshanagent}@postgres:5432/jianshanagent
-      TZ: Asia/Shanghai
-    volumes:
-      - ./config/secrets.yaml:/app/config/secrets.yaml:ro
-      - ./sites:/app/sites:ro
-      - ./plugins:/app/plugins:ro
-      - ./data:/data
+      <<: *bot-env
     depends_on:
+      init:
+        condition: service_completed_successfully
       qqbot:
         condition: service_started
       postgres:
