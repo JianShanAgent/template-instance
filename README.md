@@ -35,10 +35,12 @@ cd instance-mywiki
 **（1）编辑 [`config/core.wiki.yaml`](config/core.wiki.yaml)，填入目标 MediaWiki 地址：**
 
 ```yaml
-name: "某某游戏"                          # 必填：Wiki 名称，会注入查证与对话提示词
-about: "某某游戏玩家资料站"                # 可选：一句话背景说明
-api_url: "https://your.wiki/api.php"     # 必填：MediaWiki 的 api.php 接口地址
-site: ""                                 # 暂不用站点插件时留空
+name: "某某游戏"                            # 必填：Wiki 名称，会注入查证与对话提示词
+about: "某某游戏玩家资料站"                  # 可选：一句话背景说明
+wikis:                                     # 挂哪几个 wiki；一般只有一个，同题材的几个 wiki 也可以都挂上
+  - id: main                               # 必填：这个 wiki 在部署里的名字（知识库的目录名、密钥的键）
+    api_url: "https://your.wiki/api.php"   # 必填：MediaWiki 的 api.php 接口地址
+    site: ""                               # 暂不用站点插件时留空
 ```
 
 **（2）复制凭据模板并填入密钥（`secrets.yaml` 已加入 `.gitignore`，不会提交入库）：**
@@ -109,6 +111,8 @@ docker compose exec qqbot python -m jianshanagent.plugins.knowledge embed
 docker compose exec qqbot python -m jianshanagent.plugins.knowledge load
 ```
 
+挂了不止一个 wiki 时，这三条命令会挨个 wiki 做；只做其中一个，在子命令前面加 `--wiki <id>`（如 `... knowledge --wiki main run`）。每个 wiki 的文件在 `data/kb/<id>/` 下。
+
 首次全量导入后，Docker Compose 中的 `kbsync` 容器（或原生运行 `uv run python -m jianshanagent.plugins.knowledge sync --loop`）会每小时自动检查 Wiki 的最近更改并增量更新数据库。
 
 ## 怎么添加和同步你自己的插件
@@ -118,7 +122,7 @@ docker compose exec qqbot python -m jianshanagent.plugins.knowledge load
 ### 1. 直接写在本仓库的 `sites/` 或 `plugins/` 目录里（最简单，随仓库自动同步）
 
 不需要单独建包或发版，直接在本仓库对应目录下新建插件文件夹：
-- **自写站点插件**：建目录 `sites/<插件id>/`（放入 `plugin.yaml`、`config.yaml`，按需放 `wiki.py`、`knowledge.py`；写法参考 [`template-site-wiki`](https://github.com/JianShanAgent/template-site-wiki)），然后在 `config/core.wiki.yaml` 里填 `site: <插件id>`。
+- **自写站点插件**：建目录 `sites/<插件id>/`（放入 `plugin.yaml`、`config.yaml`，按需放 `wiki.py`、`knowledge.py`；写法参考 [`template-site-wiki`](https://github.com/JianShanAgent/template-site-wiki)），然后在 `config/core.wiki.yaml` 里给用它的那个 wiki 填 `site: <插件id>`。
 - **自写功能插件**：建目录 `plugins/<插件id>/`（放入 `plugin.yaml`、`__init__.py`），然后在 `config/core.plugins.yaml`（或网页后台的「插件」页）启用它。
 
 在服务器上同步更新时，原生运行只需 `git pull` 后重启进程；Docker Compose 只需 `git pull && docker compose restart qqbot kbsync`（目录已直接挂载进容器）。
@@ -130,7 +134,7 @@ docker compose exec qqbot python -m jianshanagent.plugins.knowledge load
    ```toml
    "jianshanagent-site-huiji @ git+https://github.com/JianShanAgent/site-huiji.git",
    ```
-2. 在 `config/core.wiki.yaml` 中填上 `site: <插件id>`，重新执行 `uv sync` 或 `docker compose up -d --build` 即可。
+2. 在 `config/core.wiki.yaml` 中给用它的那个 wiki 填上 `site: <插件id>`，重新执行 `uv sync` 或 `docker compose up -d --build` 即可。
 
 ## 目录说明
 

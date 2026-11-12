@@ -1,16 +1,21 @@
-# 这个机器人服务哪个 MediaWiki 站点。只写和核心默认值不一样的项，
+# 这个机器人服务哪些 MediaWiki 站点。只写和核心默认值不一样的项，
 # 完整默认项说明见 agent-core 仓库的 src/jianshanagent/defaults/core.wiki.yaml。
 
 name: ""                            # 必填。Wiki 名称（例如 "某某游戏"），会带入系统提示词
 about: ""                           # 可选。一句话背景介绍（例如 "某某公司开发的角色扮演游戏"）
 
-api_url: ""                         # 必填。MediaWiki 接口地址，如 https://your.wiki/api.php 或 https://your.wiki/w/api.php
-# site_base: ""                     # 可选。站点根地址，不填默认取 api_url 的域名
-# article_path: "/wiki/$1"          # 可选。词条 URL 规则，默认为 /wiki/$1
-# auth_header: ""                   # 可选。站点需要携带放行请求头时填写头名称，密钥填在 secrets.yaml 的 wiki.authkey
+# 挂哪几个 wiki，一项一个。一般只有一个；同一个题材有好几个 wiki 时可以都挂上：
+# 知识库各建各的、一起检索，/查 各查各的，回答里标明出处。排第一的是主 wiki。
+wikis:
+  - id: main                        # 必填。这个 wiki 在部署里的名字（小写字母、数字、下划线）：知识库的目录名、密钥的键。建了知识库以后不要改
+    # label: ""                     # 可选。挂了不止一个 wiki 时，回答里标出处用；不填就用 id
+    api_url: ""                     # 必填。MediaWiki 接口地址，如 https://your.wiki/api.php 或 https://your.wiki/w/api.php
+    # site_base: ""                 # 可选。站点根地址，不填默认取 api_url 的域名
+    # article_path: "/wiki/$1"      # 可选。词条 URL 规则，默认为 /wiki/$1
+    # auth_header: ""               # 可选。站点需要携带放行请求头时填写头名称，密钥填在 secrets.yaml 的 wiki.<id>.authkey
 
-# 可选。使用哪个站点插件（填插件 id，上级平台插件会自动加载）：
-# - 若插件放在本仓库的 sites/<id>/ 目录下，直接填 <id> 即可；
-# - 若插件是独立 Python 包，先加进 pyproject.toml 的 dependencies，再在这里填 <id>。
-# 不填则按标准通用 MediaWiki 运行。
-site: ""
+    # 可选。这个 wiki 用哪个站点插件（填插件 id，上级平台插件会自动加载）：
+    # - 若插件放在本仓库的 sites/<id>/ 目录下，直接填 <id> 即可；
+    # - 若插件是独立 Python 包，先加进 pyproject.toml 的 dependencies，再在这里填 <id>。
+    # 不填则按标准通用 MediaWiki 运行。
+    site: ""
