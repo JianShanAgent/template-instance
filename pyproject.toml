@@ -8,7 +8,6 @@ requires-python = ">=3.12"
 dependencies = [
   "jianshanagent @ git+https://github.com/JianShanAgent/agent-core.git",
   # 如果要使用外部独立仓库发布的插件，直接加在这里即可（uv sync 与 Docker 构建都会自动拉取）：
-  # "jianshanagent-site-huiji @ git+https://github.com/JianShanAgent/site-huiji.git",
   # "jianshanagent-site-huiji-yys @ git+https://github.com/JianShanAgent/site-huiji-yys.git",
 ]
 

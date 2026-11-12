@@ -43,6 +43,8 @@ wikis:                                     # 挂哪几个 wiki；一般只有一
     site: ""                               # 暂不用站点插件时留空
 ```
 
+> **你的 Wiki 已经有人做好了站点插件？** 这里可以写成 `wikis: []`，启动以后打开管理后台的「Wiki」页：站点目录按平台（灰机、BWiki……）列着做好了的站，点「添加」就下载它的站点插件并挂上，地址不用自己填，也不用重启。
+
 **（2）复制凭据模板并填入密钥（`secrets.yaml` 已加入 `.gitignore`，不会提交入库）：**
 
 ```bash
@@ -97,7 +99,9 @@ Docker 方式下改了东西怎么生效：
 
 ### 4. 构建全站向量知识库
 
-刚启动时 `/查` 与站内实时搜索已经可用。要抓取全站页面构建语义向量知识库，按顺序运行以下三条命令（支持断点续跑）：
+刚启动时 `/查` 与站内实时搜索已经可用。要抓取全站页面构建语义向量知识库，最省事的是在管理后台的「Wiki」页里点那个 wiki 的「建知识库」：`kbsync` 容器（原生运行时是 `sync --loop` 那个进程）在后台全量取数、切片、算向量、导入，做完自动转成增量更新。
+
+也可以手动按顺序运行以下三条命令（支持断点续跑）：
 
 ```bash
 # 方式 A（原生 uv）：
@@ -129,10 +133,12 @@ docker compose exec qqbot python -m jianshanagent.plugins.knowledge load
 
 ### 2. 引用外部独立 Git 仓库的插件
 
-如果使用的是独立仓库发布的插件（如官方的 [`site-huiji`](https://github.com/JianShanAgent/site-huiji) 或别人开源的插件）：
+列在[站点目录](https://github.com/JianShanAgent/catalog)里的站点插件不用走这一步，在管理后台的「Wiki」页里点「添加」就行（下载的插件在 `data/sites/`）。
+
+别的独立仓库发布的插件（别人开源的站点插件、功能插件），或者想把插件的版本跟着镜像固定下来时：
 1. 在 `pyproject.toml` 的 `dependencies` 中加上 Git 依赖，例如：
    ```toml
-   "jianshanagent-site-huiji @ git+https://github.com/JianShanAgent/site-huiji.git",
+   "jianshanagent-site-huiji-yys @ git+https://github.com/JianShanAgent/site-huiji-yys.git",
    ```
 2. 在 `config/core.wiki.yaml` 中给用它的那个 wiki 填上 `site: <插件id>`，重新执行 `uv sync` 或 `docker compose up -d --build` 即可。
 
@@ -145,7 +151,7 @@ config/
   local/                  本机临时调试覆写（不入库）
 sites/                    存放本实例自写的站点插件（随本仓库 Git 同步）
 plugins/                  存放本实例自写的功能插件（随本仓库 Git 同步）
-data/                     运行时生成：登录令牌、后台里改过的配置、知识库文件（不入库）
+data/                     运行时生成：登录令牌、后台里改过的配置和加的 wiki、下载的站点插件、知识库文件（不入库）
 pyproject.toml            Python 依赖声明（默认从 GitHub 拉取 agent-core）
 Dockerfile                单实例容器镜像构建文件
 docker-compose.yml        一键启动机器人 + kbsync 自动同步 + pgvector 数据库
